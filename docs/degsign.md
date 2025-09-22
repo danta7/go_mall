@@ -38,7 +38,7 @@ services:
 1. 配置与运行：
 
 ```bash
-cp .env.example .env
+cp ..env .env
 go run ./cmd/spike-api
 ```
 
