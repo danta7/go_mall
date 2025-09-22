@@ -12,7 +12,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-
 # 统一 Compose 项目名，便于容器、网络、卷的命名与隔离
 export COMPOSE_PROJECT_NAME=spike_shop
 
