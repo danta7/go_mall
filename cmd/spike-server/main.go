@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/danta7/go_mall/internal/config"
 	"github.com/danta7/go_mall/internal/logger"
+	"github.com/danta7/go_mall/internal/resp"
 	"log"
 	"net/http"
 )
@@ -22,9 +23,11 @@ func main() {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
+		data := map[string]any{
+			"status":  "ok",
+			"version": cfg.App.Version,
+		}
+		resp.OK(w, &data, "", "")
 	})
 
 	addr := fmt.Sprintf(":%d", cfg.App.Port)
