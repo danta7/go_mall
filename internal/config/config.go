@@ -23,11 +23,12 @@ import (
 //   - CORS_ALLOWED_ORIGINS, CORS_ALLOWED_METHODS, CORS_ALLOWED_HEADERS（CSV）
 type Config struct {
 	App struct {
-		Name           string
-		Env            string
-		Port           int
-		RequestTimeout time.Duration
-		Version        string
+		Name            string
+		Env             string
+		Port            int
+		RequestTimeout  time.Duration
+		Version         string
+		ShutdownTimeout time.Duration
 	}
 
 	Log struct {
@@ -55,6 +56,7 @@ func Load() (*Config, error) {
 	c.App.Port = getEnvAsInt("APP_PORT", 8080)
 	c.App.RequestTimeout = getEnvAsDurationMs("REQUEST_TIMEOUT_MS", 5000)
 	c.App.Version = getEnv("APP_VERSION", "0.1.0")
+	c.App.ShutdownTimeout = getEnvAsDurationMs("SHUTDOWN_TIMEOUT_MS", 5000)
 
 	c.Log.Level = strings.ToLower(getEnv("LOG_LEVEL", "info"))
 	c.Log.Encoding = strings.ToLower(getEnv("LOG_ENCODING", "json"))

@@ -9,7 +9,8 @@ build:
 	$(GO) build -o $(BIN_DIR)/$(APP) ./cmd/$(APP)
 
 run:
-	$(GO) run ./cmd/$(APP)
+	@./bin/spike-server
+#	$(GO) run ./cmd/$(APP)
 
 test:
 	$(GO) test ./... -race -count=1
