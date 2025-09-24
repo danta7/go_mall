@@ -40,7 +40,7 @@ func New(cfg *config.Config, logger *zap.Logger) (*DB, error) {
 
 	// 测试链接
 	if err := sqlDB.Ping(); err != nil {
-		sqlDB.Close()
+		_ = sqlDB.Close()
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
@@ -118,7 +118,7 @@ func (db *DB) getExecuteMigrations() (map[string]bool, error) {
 	if err != nil {
 		return executed, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	// 遍历查询结果
 	for rows.Next() {
@@ -151,7 +151,7 @@ func (db *DB) executeMigration(filepath string) error {
 
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			return
 		}
 		err = tx.Commit()

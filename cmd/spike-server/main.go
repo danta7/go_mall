@@ -5,10 +5,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/danta7/go_mall/database"
+	"github.com/danta7/go_mall/internal/api"
 	"github.com/danta7/go_mall/internal/config"
 	"github.com/danta7/go_mall/internal/logger"
 	mw "github.com/danta7/go_mall/internal/middleware"
+	"github.com/danta7/go_mall/internal/repo"
 	"github.com/danta7/go_mall/internal/resp"
+	"github.com/danta7/go_mall/internal/service"
 	"log"
 	"net/http"
 	"os"
@@ -57,7 +60,13 @@ func main() {
 		lg.Sugar().Fatalw("failed to run database migrations", "err", err, "dir", migrationDir)
 	}
 
+	// 初始化以来注入链：仓储 -> 服务 -> API处理器
+	userRepo := repo.NewUserRepository(db)
+	userService := service.NewUserService(userRepo, lg)
+	userHandler := api.NewUserHandler(userService, lg)
+
 	mux := http.NewServeMux()
+	// 健康检查端点
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		data := map[string]any{
 			"status":  "ok",
@@ -65,6 +74,11 @@ func main() {
 		}
 		resp.OK(w, &data, "", "")
 	})
+
+	// 用户认证相关 API 路由
+	mux.HandleFunc("/api/v1/auth/register", userHandler.Register)
+	mux.HandleFunc("/api/v1/auth/login", userHandler.Login)
+	mux.HandleFunc("/api/v1/profile", userHandler.GetProfile)
 
 	// Build middleware chain : request ID -> recovery -> timeout -> CORS -> access_log
 	handler := mw.RequestID(mux)

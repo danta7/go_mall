@@ -18,7 +18,7 @@ func Recovery(logger *zap.Logger) func(handler http.Handler) http.Handler {
 				if rec := recover(); rec != nil {
 					logger.Error("panic recovered", zap.Any("panic", rec), zap.ByteString("stack", debug.Stack()))
 					reqID := RequestIDFromContext(r.Context())
-					resp.Error(w, http.StatusInternalServerError, resp.COdeInternalError, "internal server error", reqID, "")
+					resp.Error(w, http.StatusInternalServerError, resp.CodeInternalError, "internal server error", reqID, "")
 				}
 			}()
 			next.ServeHTTP(w, r)

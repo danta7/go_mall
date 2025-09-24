@@ -7,20 +7,20 @@ import (
 
 func withEnv(key, value string, fn func()) {
 	orig, had := os.LookupEnv(key)
-	os.Setenv(key, value)
+	_ = os.Setenv(key, value)
 	defer func() {
 		if had {
-			os.Setenv(key, orig)
+			_ = os.Setenv(key, orig)
 		} else {
-			os.Unsetenv(key)
+			_ = os.Unsetenv(key)
 		}
 	}()
 	fn()
 }
 
 func TestLoad_DefaultsAndValidation_OK(t *testing.T) {
-	os.Unsetenv("APP_ENV")
-	os.Unsetenv("APP_PORT")
+	_ = os.Unsetenv("APP_ENV")
+	_ = os.Unsetenv("APP_PORT")
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
