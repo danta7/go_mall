@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/danta7/go_mall/database"
 	"github.com/danta7/go_mall/internal/config"
 	"github.com/danta7/go_mall/internal/logger"
 	mw "github.com/danta7/go_mall/internal/middleware"
@@ -15,6 +16,12 @@ import (
 	"time"
 )
 
+// main 为应用入口：
+// 1) 加载并校验配置；
+// 2) 初始化结构化日志；
+// 3) 初始化数据库连接并执行迁移；
+// 4) 构建路由与中间件链；
+// 5) 启动 HTTP 服务
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -26,6 +33,30 @@ func main() {
 	if err != nil {
 		log.Fatalf("init logger: %v", err)
 	}
+
+	// 初始化数据库连接
+	db, err := database.New(cfg, lg)
+	if err != nil {
+		lg.Sugar().Fatalw("failed to initialize database", "err", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			lg.Sugar().Errorw("failed to close database connection", "err", err)
+		}
+	}()
+
+	// 执行数据库迁移
+	// 最佳实践：在应用启动时、HTTP服务器启动前执行数据库迁移
+	// 这样可以确保在处理请求前，数据库结构已经完全准备好
+	// 从环境变量获取迁移目录路径，如果未设置则使用默认值
+	// 从配置中获取迁移目录路径
+	migrationDir := cfg.Migrations.Dir
+	lg.Sugar().Infow("using migrations directory", "path", migrationDir)
+
+	if err := db.RunMigrations(migrationDir); err != nil {
+		lg.Sugar().Fatalw("failed to run database migrations", "err", err, "dir", migrationDir)
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		data := map[string]any{
