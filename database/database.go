@@ -21,7 +21,7 @@ type DB struct {
 
 // New 创建数据库连接
 func New(cfg *config.Config, logger *zap.Logger) (*DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&loc=Local&multiStatements=true",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&loc=Local",
 		cfg.Database.User,
 		cfg.Database.Password,
 		cfg.Database.Host,
@@ -139,18 +139,44 @@ func (db *DB) executeMigration(filepath string) error {
 
 	filename := filepath[strings.LastIndex(filepath, "/")+1:]
 
-	// 执行迁移文件中的SQL语句
-	// 迁移文件通常包含：
-	// 1. CREATE TABLE 语句创建新表
-	// 2. ALTER TABLE 语句修改现有表结构
-	// 3. INSERT 语句初始化数据
-	// 4. 其他数据库对象的创建（视图、索引等）
-	if _, execErr := db.Exec(string(content)); execErr != nil {
-		return execErr
+	// 分割 SQL 语句并逐条执行
+	// 使用分号(;)作为语句分隔符，但需要处理注释和字符串中的分号
+	sqlStatements := strings.Split(string(content), ";")
+
+	// 开始事务以确保所有SQL语句要么全部成功，要么全部失败
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		err = tx.Commit()
+	}()
+
+	// 	执行每条 sql 语句
+	for _, stmt := range sqlStatements {
+		// 去除语句前后的空白字符
+		stmt = strings.TrimSpace(stmt)
+		if stmt == "" || strings.HasPrefix(strings.TrimLeft(stmt, " \t"), "--") {
+			continue
+		}
+
+		if _, execErr := tx.Exec(stmt); execErr != nil {
+			err = fmt.Errorf("exec SQL: %w", execErr)
+			return err
+		}
 	}
 
 	// 记录迁移过程
 	// 通过在migrations表中记录已执行的迁移文件名，确保相同的迁移不会被重复执行
-	_, err = db.Exec("INSERT INTO migrations (filename) VALUES (?)", filename)
-	return err
+	if _, err = tx.Exec("INSERT INTO migrations (filename) VALUES (?)", filename); err != nil {
+		err = fmt.Errorf("record migration: %w", err)
+		return err
+	}
+
+	return nil
 }
