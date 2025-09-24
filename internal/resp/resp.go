@@ -25,6 +25,7 @@ type Response[T any] struct {
 	Timestamp int64  `json:"timestamp"`
 }
 
+// WriteJSON 将 Response 写入到 http.ResponseWriter，按入参设置 HTTP 状态码与响应体。
 func WriteJSON[T any](w http.ResponseWriter, status int, code Code, message string, data *T, requestID, traceID string) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
@@ -38,15 +39,17 @@ func WriteJSON[T any](w http.ResponseWriter, status int, code Code, message stri
 	})
 }
 
+// OK 写入一个 code=0 的成功响应，HTTP 状态为 200。
 func OK[T any](w http.ResponseWriter, data *T, requestID, traceID string) {
 	WriteJSON(w, http.StatusOK, CodeOK, "OK", data, requestID, traceID)
 }
 
+// Error 写入一个失败响应，HTTP 状态由调用方决定。
 func Error(w http.ResponseWriter, status int, code Code, message, requestID, traceID string) {
 	WriteJSON[any](w, status, code, message, nil, requestID, traceID)
 }
 
-// HTTPStatusFromCode Map business code to HTTP status for common cases
+// HTTPStatusFromCode 提供常见业务码到 HTTP 状态码的映射。
 func HTTPStatusFromCode(code Code) int {
 	switch code {
 	case CodeOK:
